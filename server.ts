@@ -1,82 +1,79 @@
-import { delay } from "https://deno.land/std@0.177.0/async/delay.ts";
+const ANILIST_USERNAME = "KapitanLumik";
 
-/** Default port for serving HTTP. */
-const HTTP_PORT = 8000;
-
-export interface ConnInfo {
-  readonly localAddr: Deno.Addr;
-  readonly remoteAddr: Deno.Addr;
+const query = `
+query ($name: String) {
+  User (name: $name) {
+    name
+    statistics {
+      anime {
+        count
+        episodesWatched
+      }
+      manga {
+        count
+        chaptersRead
+      }
+    }
+  }
 }
+`;
 
-export type Handler = (
-  request: Request,
-  connInfo: ConnInfo,
-) => Response | Promise<Response>;
+async function handleRequest(req) {
+  try {
+    const response = await fetch("https://graphql.anilist.co", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json", 
+        "Accept": "application/json" 
+      },
+      body: JSON.stringify({ query, variables: { name: ANILIST_USERNAME } }),
+    });
 
-export interface ServerInit extends Partial<Deno.ListenOptions> {
-  handler: Handler;
-  onError?: (error: unknown) => Response | Promise<Response>;
-}
+    const data = await response.json();
 
-export class Server {
-  #port?: number;
-  #host?: string;
-  #handler: Handler;
-  #onError: (error: unknown) => Response | Promise<Response>;
-  #abortController = new AbortController();
+    if (data.errors || !data.data || !data.data.User) {
+      return new Response(JSON.stringify({ 
+        error: "Uzivatel nenalezen nebo AniList API ma vypadek" 
+      }), {
+        status: 404,
+        headers: { 
+          "content-type": "application/json; charset=UTF-8",
+          "access-control-allow-origin": "*" 
+        },
+      });
+    }
 
-  constructor(serverInit: ServerInit) {
-    this.#port = serverInit.port;
-    this.#host = serverInit.hostname;
-    this.#handler = serverInit.handler;
-    this.#onError = serverInit.onError ?? function (error: unknown) {
-      console.error(error);
-      return new Response("Internal Server Error", { status: 500 });
+    const user = data.data.User;
+
+    const widgetData = {
+      title: "Anilist",
+      username: user.name,
+      subtitle: "Larping is the way of life",
+      stats: [
+        { label: "Total Anime", value: String(user.statistics.anime.count) },
+        { label: "Episodes Watched", value: String(user.statistics.anime.episodesWatched) },
+        { label: "Total Manga", value: String(user.statistics.manga.count) },
+        { label: "Chapters Read", value: String(user.statistics.manga.chaptersRead) }
+      ]
     };
-  }
 
-  async listenAndServe() {
-    const port = this.#port ?? HTTP_PORT;
-    const hostname = this.#host ?? "0.0.0.0";
-
-    return await Deno.serve({
-      port,
-      hostname,
-      signal: this.#abortController.signal,
-      onError: this.#onError,
-    }, (request, info) => {
-      return this.#handler(request, info);
-    }).finished;
-  }
-
-  close() {
-    this.#abortController.abort();
+    return new Response(JSON.stringify(widgetData), {
+      headers: { 
+        "content-type": "application/json; charset=UTF-8",
+        "access-control-allow-origin": "*" 
+      },
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: "Serverova chyba", message: err.message }), { 
+      status: 500,
+      headers: { 
+        "content-type": "application/json; charset=UTF-8",
+        "access-control-allow-origin": "*" 
+      },
+    });
   }
 }
 
-export async function serve(
-  handler: Handler,
-  options: ServeInit = {},
-) {
-  const port = options.port ?? HTTP_PORT;
-  const hostname = options.hostname ?? "0.0.0.0";
-  
-  return Deno.serve({
-    port,
-    hostname,
-    onError: options.onError,
-    onListen: options.onListen,
-  }, (request, info) => {
-    return handler(request, info);
-  });
-}
-
-export interface ServeInit extends Partial<Deno.ListenOptions> {
-  signal?: AbortSignal;
-  onError?: (error: unknown) => Response | Promise<Response>;
-  onListen?: (params: { hostname: string; port: number }) => void;
-}
-
-// Spuštění samotného serveru, aby aplikace na Deno Deploy jen tak neskončila
-const defaultHandler = (_req: Request) => new Response("Aplikace úspěšně běží!", { status: 200 });
-serve(defaultHandler);
+// TATO ČÁST JE KLÍČOVÁ PRO KOYEB: Čte port z prostředí
+const port = parseInt(Deno.env.get("PORT") || "8000");
+Deno.serve({ port, handler: handleRequest });
