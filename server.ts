@@ -46,16 +46,15 @@ async function handleRequest(req) {
 
     const user = data.data.User;
 
-    // TADY JE ZMĚNA: Formát data textem (např. "9. Apr 2021" nebo podobně bez čistých číselných teček)
-    const options = { day: 'numeric', month: 'short', year: 'numeric' };
+    // ZMĚNA: Bezpečný ISO formát RRRR-MM-DD (např. 2021-04-09) bez čárek a teček
     const joinDate = user.createdAt 
-      ? new Date(user.createdAt * 1000).toLocaleDateString("en-US", options)
+      ? new Date(user.createdAt * 1000).toISOString().split('T')[0]
       : "Unknown";
 
     const widgetData = {
       title: "Anilist",
       username: user.name,
-      subtitle: "In every age, in every place, the deeds of men remain the same.",
+      subtitle: "Larping is the way of life",
       stats: [
         { label: "Total Anime", value: String(user.statistics.anime.count) },
         { label: "Episodes Watched", value: String(user.statistics.anime.episodesWatched) },
