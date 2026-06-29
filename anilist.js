@@ -1,5 +1,3 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-
 const ANILIST_USERNAME = "KapitanLumik";
 
 const query = `
@@ -20,7 +18,7 @@ query ($name: String) {
 }
 `;
 
-serve(async (req) => {
+async function handleRequest(req) {
   try {
     const response = await fetch("https://graphql.anilist.co", {
       method: "POST",
@@ -33,11 +31,9 @@ serve(async (req) => {
 
     const data = await response.json();
 
-    // Ošetření situace, kdy AniList vrátí chybu (např. uživatel neexistuje)
     if (data.errors || !data.data || !data.data.User) {
       return new Response(JSON.stringify({ 
-        error: "Uzivatel nenalezen nebo AniList API ma vypadek", 
-        detail: data.errors || "Data jsou prazdna" 
+        error: "Uzivatel nenalezen nebo AniList API ma vypadek" 
       }), {
         status: 404,
         headers: { 
@@ -76,4 +72,8 @@ serve(async (req) => {
       },
     });
   }
-});
+}
+
+// TATO ČÁST JE KLÍČOVÁ PRO KOYEB: Čte port z prostředí
+const port = parseInt(Deno.env.get("PORT") || "8000");
+Deno.serve({ port, handler: handleRequest });
