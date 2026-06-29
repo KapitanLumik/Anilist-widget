@@ -46,21 +46,22 @@ async function handleRequest(req) {
 
     const user = data.data.User;
 
-    // Převedeme timestamp (sekundy) na čitelný formát data (DD. MM. YYYY)
+    // TADY JE ZMĚNA: Formát data textem (např. "9. Apr 2021" nebo podobně bez čistých číselných teček)
+    const options = { day: 'numeric', month: 'short', year: 'numeric' };
     const joinDate = user.createdAt 
-      ? new Date(user.createdAt * 1000).toLocaleDateString("cs-CZ")
-      : "Neznámé";
+      ? new Date(user.createdAt * 1000).toLocaleDateString("en-US", options)
+      : "Unknown";
 
     const widgetData = {
       title: "Anilist",
       username: user.name,
-      subtitle: "Larping is the way of life",
+      subtitle: "In every age, in every place, the deeds of men remain the same.",
       stats: [
         { label: "Total Anime", value: String(user.statistics.anime.count) },
         { label: "Episodes Watched", value: String(user.statistics.anime.episodesWatched) },
         { label: "Total Manga", value: String(user.statistics.manga.count) },
         { label: "Chapters Read", value: String(user.statistics.manga.chaptersRead) },
-        { label: "Joined", value: joinDate } // <--- Nová statistika
+        { label: "Joined", value: joinDate }
       ]
     };
 
