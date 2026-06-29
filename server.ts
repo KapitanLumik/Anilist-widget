@@ -4,6 +4,7 @@ const query = `
 query ($name: String) {
   User (name: $name) {
     name
+    createdAt
     statistics {
       anime {
         count
@@ -45,6 +46,11 @@ async function handleRequest(req) {
 
     const user = data.data.User;
 
+    // Převedeme timestamp (sekundy) na čitelný formát data (DD. MM. YYYY)
+    const joinDate = user.createdAt 
+      ? new Date(user.createdAt * 1000).toLocaleDateString("cs-CZ")
+      : "Neznámé";
+
     const widgetData = {
       title: "Anilist",
       username: user.name,
@@ -53,7 +59,8 @@ async function handleRequest(req) {
         { label: "Total Anime", value: String(user.statistics.anime.count) },
         { label: "Episodes Watched", value: String(user.statistics.anime.episodesWatched) },
         { label: "Total Manga", value: String(user.statistics.manga.count) },
-        { label: "Chapters Read", value: String(user.statistics.manga.chaptersRead) }
+        { label: "Chapters Read", value: String(user.statistics.manga.chaptersRead) },
+        { label: "Joined", value: joinDate } // <--- Nová statistika
       ]
     };
 
@@ -74,6 +81,5 @@ async function handleRequest(req) {
   }
 }
 
-// TATO ČÁST JE KLÍČOVÁ PRO KOYEB: Čte port z prostředí
 const port = parseInt(Deno.env.get("PORT") || "8000");
 Deno.serve({ port, handler: handleRequest });
