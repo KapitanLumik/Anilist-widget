@@ -54,7 +54,7 @@ async function handleRequest(req) {
     const widgetData = {
       title: "Anilist",
       username: user.name,
-      subtitle: "Larping is the way of life",
+      subtitle: "In every age, in every place, the deeds of men remain the same.",
       stats: [
         { label: "Total Anime", value: String(user.statistics.anime.count) },
         { label: "Episodes Watched", value: String(user.statistics.anime.episodesWatched) },
