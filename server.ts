@@ -1,8 +1,9 @@
 // Copyright 2018-2023 the Deno authors. All rights reserved. MIT license.
-import { delay } from "../async/mod.ts";
+import { delay } from "https://deno.land/std@0.177.0/async/delay.ts";
 
 /** Thrown by Server after it has been closed. */
 const ERROR_SERVER_CLOSED = "Server closed";
+// ... zbytek kódu zůstává úplně stejný
 
 /** Default port for serving HTTP. */
 const HTTP_PORT = 80;
